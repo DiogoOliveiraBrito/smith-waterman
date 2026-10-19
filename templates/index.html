@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comparador de Sequências de DNA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f6fa; --panel:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e4e7ef; --line-2:#d5dae6;
+  --brand:#4f46e5; --brand-ink:#ffffff; --brand-soft:#eef0ff; --brand-2:#0ea5a4;
+  --diag:#2563eb; --diag-bg:#dbe8ff;
+  --cima:#d97706; --cima-bg:#ffedd2;
+  --esq:#9333ea; --esq-bg:#f1e3ff;
+  --ok:#059669; --ok-bg:#d9f7ea;
+  --bad:#dc2626; --bad-bg:#fee4e2;
+  --path:#fecdd3; --path-ink:#881337;
+  --cur:#fde047; --warn-bg:#fef6d8;
+  --hdr:#f1f3f9; --cell:#fafbfe;
+  --A:#16a34a; --C:#2563eb; --G:#d97706; --T:#e11d48;
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 4px 16px rgba(15,23,42,.05);
+  --shadow-lg:0 10px 30px rgba(15,23,42,.12);
+  --radius:16px;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Code",Consolas,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0e18; --panel:#111827; --ink:#e6eaf3; --muted:#94a3b8; --line:#232c40; --line-2:#2e3954;
+    --brand:#8b8cf8; --brand-ink:#0b1020; --brand-soft:#1d2140; --brand-2:#2dd4bf;
+    --diag:#60a5fa; --diag-bg:#172a4a;
+    --cima:#fbbf24; --cima-bg:#3a2a10;
+    --esq:#c084fc; --esq-bg:#2c1c45;
+    --ok:#34d399; --ok-bg:#0f3327;
+    --bad:#f87171; --bad-bg:#3d1717;
+    --path:#5b1f2e; --path-ink:#ffe0e6;
+    --cur:#eab308; --warn-bg:#3a3014;
+    --hdr:#182033; --cell:#0e1422;
+    --A:#4ade80; --C:#60a5fa; --G:#fbbf24; --T:#fb7185;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+    --shadow-lg:0 10px 30px rgba(0,0,0,.5);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0e18; --panel:#111827; --ink:#e6eaf3; --muted:#94a3b8; --line:#232c40; --line-2:#2e3954;
+  --brand:#8b8cf8; --brand-ink:#0b1020; --brand-soft:#1d2140; --brand-2:#2dd4bf;
+  --diag:#60a5fa; --diag-bg:#172a4a;
+  --cima:#fbbf24; --cima-bg:#3a2a10;
+  --esq:#c084fc; --esq-bg:#2c1c45;
+  --ok:#34d399; --ok-bg:#0f3327;
+  --bad:#f87171; --bad-bg:#3d1717;
+  --path:#5b1f2e; --path-ink:#ffe0e6;
+  --cur:#eab308; --warn-bg:#3a3014;
+  --hdr:#182033; --cell:#0e1422;
+  --A:#4ade80; --C:#60a5fa; --G:#fbbf24; --T:#fb7185;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+  --shadow-lg:0 10px 30px rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:14.5px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+h1,h2,h3{letter-spacing:-.01em}
+
+/* ---------- topo ---------- */
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.topbar .in{max-width:1640px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:14px}
+.logo{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;flex:0 0 auto;box-shadow:0 4px 14px color-mix(in srgb,var(--brand) 35%,transparent)}
+.brand h1{margin:0;font-size:17px;font-weight:800}
+.brand p{margin:0;font-size:12.5px;color:var(--muted)}
+.topbar .sp{flex:1}
+.icon-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:600 13px var(--sans);cursor:pointer}
+.icon-btn:hover{border-color:var(--line-2);background:var(--hdr)}
+.icon-btn svg{width:16px;height:16px}
+
+/* ---------- layout ---------- */
+.layout{max-width:1640px;margin:0 auto;display:grid;grid-template-columns:360px minmax(0,1fr);gap:22px;padding:22px 24px 40px;align-items:start}
+aside{position:sticky;top:84px;max-height:calc(100vh - 100px);overflow:auto;padding-right:2px;scrollbar-width:thin}
+@media (max-width:1020px){
+  .layout{grid-template-columns:1fr;padding:16px}
+  aside{position:static;max-height:none;overflow:visible}
+  .brand p{display:none}
+}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+aside .card+.card,aside .card+details{margin-top:14px}
+
+/* ---------- formulário em etapas ---------- */
+.step{padding-bottom:16px;margin-bottom:16px;border-bottom:1px dashed var(--line)}
+.step:last-of-type{border-bottom:0;margin-bottom:6px;padding-bottom:0}
+.step-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.num{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand);font-weight:800;font-size:12.5px;flex:0 0 auto}
+.step-h h2{margin:0;font-size:14.5px;font-weight:700}
+.step-h .hint{margin-left:auto}
+label{display:block;font-weight:600;font-size:12.5px;margin:10px 0 5px;color:var(--ink)}
+.field-top{display:flex;justify-content:space-between;align-items:baseline;margin:10px 0 5px}
+.field-top label{margin:0}
+.count{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+input[type=text],input[type=number]{width:100%;padding:10px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--cell);color:var(--ink);font:600 15px var(--mono);letter-spacing:1.5px;transition:border-color .15s,box-shadow .15s}
+input[type=number]{letter-spacing:0;text-align:center}
+input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 4px color-mix(in srgb,var(--brand) 18%,transparent)}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.preview{display:flex;flex-wrap:wrap;gap:2px;margin-top:6px;min-height:20px}
+.preview span{font:700 11px var(--mono);width:18px;height:20px;display:grid;place-items:center;border-radius:5px;background:var(--hdr)}
+.preview span.inv{background:var(--bad-bg);color:var(--bad)}
+.preview .more{width:auto;padding:0 6px;color:var(--muted);background:transparent}
+.drop{margin-top:12px;display:flex;align-items:center;gap:10px;width:100%;padding:11px 12px;border:1.5px dashed var(--line-2);border-radius:12px;background:transparent;color:var(--muted);font:500 13px var(--sans);cursor:pointer;text-align:left}
+.drop:hover,.drop.over{border-color:var(--brand);color:var(--brand);background:var(--brand-soft)}
+.drop svg{width:20px;height:20px;flex:0 0 auto}
+.drop b{color:var(--ink);font-weight:600}
+.file-pill{display:flex;align-items:center;gap:8px;margin-top:8px;padding:7px 10px;border-radius:10px;background:var(--brand-soft);color:var(--brand);font-size:12.5px;font-weight:600}
+.file-pill[hidden]{display:none}
+.file-pill span{flex:1;word-break:break-all}
+.file-pill button{border:0;background:transparent;color:inherit;cursor:pointer;font-size:15px;padding:0 4px;line-height:1}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mode{border:1.5px solid var(--line);border-radius:12px;padding:11px 12px;cursor:pointer;display:block;margin:0;font-weight:700;font-size:14px;position:relative;transition:border-color .15s,background .15s}
+.mode:hover{border-color:var(--line-2)}
+.mode small{display:block;font-weight:500;color:var(--muted);font-size:11.5px;margin-top:2px;line-height:1.35}
+.mode small.tec{font-size:10.5px;opacity:.75;margin-top:6px;font-style:italic}
+.mode input{position:absolute;opacity:0}
+.mode:has(input:checked){border-color:var(--brand);background:var(--brand-soft)}
+.mode:has(input:checked)::after{content:"";position:absolute;top:10px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--brand)}
+.mode:has(input:focus-visible){outline:2px solid var(--brand);outline-offset:2px}
+.params{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.param{background:var(--hdr);border-radius:12px;padding:8px}
+.param label{margin:0 0 5px;font-size:12px;text-align:center}
+.param small{display:block;text-align:center;color:var(--muted);font-size:11px;margin-top:4px;line-height:1.3}
+.param input{background:var(--panel)}
+.actions{display:grid;gap:8px;margin-top:16px}
+button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 12px}
+button:hover{border-color:var(--line-2)}
+button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:700;padding:12px 14px;width:100%;font-size:15px;box-shadow:0 6px 18px color-mix(in srgb,var(--brand) 30%,transparent);transition:transform .1s,filter .15s}
+button.primary:hover{filter:brightness(1.08)}
+button.primary:active{transform:translateY(1px)}
+button.secondary{width:100%;font-weight:600;padding:10px 14px}
+button:disabled{opacity:.45;cursor:not-allowed}
+.kbdhint{font-size:11.5px;color:var(--muted);text-align:center}
+.errbox{background:var(--bad-bg);color:var(--bad);border:1px solid color-mix(in srgb,var(--bad) 40%,transparent);border-radius:12px;padding:10px 12px;margin-top:12px;font-size:13px}
+.errbox ul{margin:4px 0 0;padding-left:18px}
+.warnbox{background:var(--warn-bg);border-radius:12px;padding:9px 12px;margin-bottom:12px;font-size:13px}
+.hint{color:var(--muted);font-size:12px}
+
+/* exemplos (recolhível) */
+details.card{padding:0}
+details.card>summary{list-style:none;cursor:pointer;padding:14px 18px;font-weight:700;display:flex;align-items:center;gap:8px}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"";margin-left:auto;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .2s}
+details.card[open]>summary::after{transform:rotate(-135deg)}
+.ex-list{display:grid;gap:6px;padding:0 14px 14px}
+.ex{text-align:left;padding:9px 12px;border-radius:10px;background:var(--cell)}
+.ex:hover{border-color:var(--brand);background:var(--brand-soft)}
+.ex b{display:block;font:700 12.5px var(--mono);letter-spacing:.5px}
+.ex span{font-size:11.5px;color:var(--muted)}
+
+/* ---------- área principal ---------- */
+main{min-width:0;display:grid;gap:16px}
+.intro{position:relative;background:linear-gradient(135deg,var(--brand-soft),color-mix(in srgb,var(--brand-2) 10%,var(--panel)));border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
+.intro[hidden]{display:none}
+.intro h2{margin:0 0 4px;font-size:16px}
+.intro>p{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.intro-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:760px){.intro-steps{grid-template-columns:1fr}}
+.intro-step{display:flex;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.intro-step p{margin:0;font-size:13px;color:var(--muted)}
+.intro-step b{display:block;color:var(--ink);font-size:13.5px}
+.intro .close{position:absolute;top:10px;right:10px;border:0;background:transparent;color:var(--muted);font-size:18px;padding:2px 8px}
+.intro .close:hover{color:var(--ink)}
+
+/* barra de resultado */
+.resbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px}
+.resbar[hidden]{display:none}
+.pill{display:flex;flex-direction:column;padding:6px 14px;border-radius:12px;background:var(--hdr);min-width:92px}
+.pill>span{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.pill b{font-size:17px;font-variant-numeric:tabular-nums;line-height:1.3}
+.pill.score{background:var(--ok-bg)} .pill.score b{color:var(--ok);font-size:20px}
+.pill .bar{height:4px;border-radius:4px;background:var(--line);margin-top:4px;overflow:hidden}
+.pill .bar i{display:block;height:100%;background:var(--ok);border-radius:4px}
+.resbar .sp{flex:1}
+.menu{position:relative}
+.menu>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);font-weight:600;font-size:13px;cursor:pointer;background:var(--panel)}
+.menu>summary::-webkit-details-marker{display:none}
+.menu>summary:hover{border-color:var(--line-2)}
+.menu>summary svg{width:16px;height:16px}
+.menu-pop{position:absolute;right:0;top:calc(100% + 6px);z-index:15;min-width:240px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);padding:6px;display:grid;gap:2px}
+.menu-pop button{border:0;text-align:left;padding:9px 10px;border-radius:8px;display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.menu-pop button:hover:not(:disabled){background:var(--hdr)}
+.menu-pop button small{color:var(--muted);font-family:var(--mono);font-size:11px}
+
+/* abas */
+.tabs-wrap{border-bottom:1px solid var(--line);margin:-18px -18px 0;padding:10px 12px 0;overflow-x:auto;scrollbar-width:none}
+.tabs{display:flex;gap:2px;min-width:max-content}
+.tab{border:0;border-radius:10px 10px 0 0;background:transparent;padding:10px 14px 11px;color:var(--muted);font-weight:600;font-size:13.5px;position:relative}
+.tab:hover{color:var(--ink);background:var(--hdr)}
+.tab[aria-selected=true]{color:var(--brand)}
+.tab[aria-selected=true]::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--brand)}
+.tab-desc{display:flex;gap:8px;align-items:flex-start;margin:14px 0 16px;padding:10px 12px;border-radius:12px;background:var(--hdr);font-size:13px;color:var(--muted)}
+.tab-desc svg{width:16px;height:16px;flex:0 0 auto;margin-top:2px;color:var(--brand)}
+.empty{text-align:center;padding:64px 20px;color:var(--muted)}
+.empty .big{width:64px;height:64px;margin:0 auto 12px;border-radius:18px;display:grid;place-items:center;background:var(--brand-soft);font-size:32px}
+
+/* cartões de resumo */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.stat{border-radius:12px;padding:12px 14px;border:1px solid var(--line);background:var(--cell)}
+.stat b{display:block;font-size:24px;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.score{background:var(--ok-bg);border-color:transparent} .stat.score b{color:var(--ok)}
+main h3{font-size:15px;margin:20px 0 10px}
+
+/* matriz */
+.mwrap{overflow:auto;max-height:580px;border:1px solid var(--line);border-radius:12px;background:var(--cell)}
+table.m{border-collapse:separate;border-spacing:0;font-family:var(--mono);font-size:13.5px;margin:0 auto}
+table.m th,table.m td{min-width:46px;height:42px;text-align:center;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 4px;position:relative;transition:background .15s}
+table.m th{background:var(--hdr);font-weight:700;position:sticky;z-index:2}
+table.m thead th{top:0}
+table.m tbody th{left:0}
+table.m thead th:first-child{left:0;z-index:3}
+table.m th.hl{background:var(--cur);color:#222}
+td .v{font-weight:600}
+td .a{position:absolute;right:3px;top:1px;font-size:11px;color:var(--muted)}
+td.dir-only .v{font-size:19px}
+td.path{background:var(--path);color:var(--path-ink)} td.path .a{color:var(--path-ink)}
+td.start{box-shadow:inset 0 0 0 3px var(--ok)}
+td.cur{background:var(--cur)!important;color:#222;box-shadow:inset 0 0 0 3px #a16207;z-index:1}
+td.cur .a{color:#222}
+td.s-d{background:var(--diag-bg);box-shadow:inset 0 0 0 2px var(--diag)}
+td.s-c{background:var(--cima-bg);box-shadow:inset 0 0 0 2px var(--cima)}
+td.s-e{background:var(--esq-bg);box-shadow:inset 0 0 0 2px var(--esq)}
+td.hidden .v{color:transparent}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin:12px 0 0}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+
+/* alinhamento */
+.aln{font-family:var(--mono);font-size:20px;display:inline-block;padding:10px 4px}
+.aln .ln{display:flex;align-items:center;gap:0}
+.aln .lbl{width:64px;font-size:13px;color:var(--muted);font-weight:700}
+.aln .col{width:30px;text-align:center;font-weight:700;border-radius:6px}
+.aln .mk{height:24px;color:var(--muted)}
+.aln .mk.m{color:var(--ok)} .aln .mk.x{color:var(--bad)}
+.aln .col.empty-col{color:transparent;background:var(--hdr);margin:1px 0;opacity:.7}
+.aln .col.new{outline:2px solid var(--cur);background:var(--cur);color:#222}
+.aln .col.g{color:var(--bad)}
+.b-A{color:var(--A)}.b-C{color:var(--C)}.b-G{color:var(--G)}.b-T{color:var(--T)}
+.alnbox{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:8px 16px;overflow:auto}
+.big-score{font-size:15px;margin-top:10px;color:var(--muted)}
+.big-score b{font-size:24px;color:var(--ok)}
+
+/* player */
+.phases{display:flex;gap:0;margin-bottom:14px;flex-wrap:wrap;background:var(--hdr);border-radius:12px;padding:4px}
+.phase{flex:1;text-align:center;font-size:12.5px;font-weight:600;border-radius:9px;padding:7px 12px;color:var(--muted);white-space:nowrap}
+.phase.on{background:var(--panel);color:var(--brand);box-shadow:var(--shadow)}
+.phase.done{color:var(--ok)}
+.phase.done::before{content:"✓ "}
+.player{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--cell)}
+.player button{min-width:40px;height:38px;font-size:15px;padding:0 10px;border-radius:10px}
+.player .go{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:700;min-width:48px}
+.player input[type=range]{flex:1;min-width:140px;accent-color:var(--brand)}
+.player .speed{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);padding:0 4px}
+.player .speed input{min-width:70px;flex:0 0 80px}
+.chip{font-size:12.5px;font-weight:600;padding:0 12px;border-radius:999px;flex:0 0 auto}
+.stepgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:16px;align-items:start}
+@media (max-width:1280px){.stepgrid{grid-template-columns:1fr}}
+.explain{background:var(--cell);border:1px solid var(--line);border-radius:12px;padding:16px;min-height:260px}
+.explain h3{margin:0 0 8px;font-size:15.5px}
+.explain p{margin:6px 0}
+.formula{font-family:var(--mono);font-size:12.5px;background:var(--hdr);border-radius:8px;padding:8px 10px;margin:8px 0;overflow-wrap:anywhere}
+table.cand{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+table.cand td{padding:7px 8px;border-bottom:1px solid var(--line)}
+table.cand tr.win td{background:var(--ok-bg);font-weight:700}
+table.cand tr.win td:first-child{border-radius:8px 0 0 8px}
+table.cand tr.win td:last-child{border-radius:0 8px 8px 0}
+table.cand td.val{font-family:var(--mono);text-align:right;font-weight:700}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff;white-space:nowrap}
+.tag.d{background:var(--diag)}.tag.c{background:var(--cima)}.tag.e{background:var(--esq)}.tag.z{background:#7b8798}
+.callout{border-left:4px solid var(--brand);background:var(--brand-soft);padding:9px 12px;border-radius:0 10px 10px 0;margin:10px 0;font-size:13.5px}
+.callout.ok{border-color:var(--ok);background:var(--ok-bg)}
+.stepno{float:right;font-size:11.5px;color:var(--muted);font-weight:600;background:var(--hdr);padding:2px 8px;border-radius:999px}
+.mini-aln{margin-top:14px}
+.mini-aln>b{display:block;font-size:12.5px;margin-bottom:6px;color:var(--muted)}
+
+/* comparar */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:1100px){.cmp{grid-template-columns:1fr}}
+.cmp .card{background:var(--cell);box-shadow:none}
+.cmp h3{margin:0 0 10px}
+.cmp button{margin-top:6px}
+table.sum{border-collapse:collapse;width:100%;max-width:620px}
+table.sum td{padding:9px 12px;border-bottom:1px solid var(--line)}
+table.sum td:first-child{color:var(--muted);width:46%}
+table.sum td:last-child{font-weight:700}
+.kbd{font-family:var(--mono);background:var(--hdr);border-radius:4px;padding:0 5px;font-size:12px}
+.note{font-size:13.5px;color:var(--muted);margin-top:14px;max-width:820px}
+.note b{color:var(--ink)}
+details.note summary{cursor:pointer;padding:6px 0}
+details.note p{margin:8px 0}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+.status{margin-top:10px;color:var(--muted);font-size:13px}
+.status:empty{display:none}
+[aria-invalid="true"]{border-color:var(--bad)!important}
+@media(max-width:480px){.topbar .in{padding:10px 12px;gap:8px}.brand h1{font-size:14px}.icon-btn{padding:0 8px}.layout{padding:12px;gap:12px}.card{padding:14px}.tabs-wrap{margin:-14px -14px 0}.pill{min-width:80px;padding:6px 10px}button{min-height:40px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="in">
+    <div class="logo" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 3c0 6 10 6 10 12s-10 3-10 6"/><path d="M17 3c0 6-10 6-10 12s10 3 10 6"/><path d="M8.5 6.5h7M8.5 17.5h7M10 12h4"/></svg>
+    </div>
+    <div class="brand">
+      <h1>Comparador de Sequências de DNA</h1>
+      <p>Descubra o quanto duas sequências de DNA se parecem, passo a passo</p>
+    </div>
+    <div class="sp"></div>
+    <button type="button" class="icon-btn" id="btnAjuda" title="Mostrar o guia rápido">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h.01"/></svg>
+      <span>Como funciona</span>
+    </button>
+    <button type="button" class="icon-btn" id="btnTema" title="Alternar tema claro/escuro" aria-label="Alternar tema">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+<aside>
+  <div class="card">
+    <section class="step">
+      <div class="step-h"><span class="num">1</span><h2>Sequências</h2><span class="hint">letras A, C, G, T</span></div>
+      <div class="field-top"><label for="seq1">Sequência 1 <span class="hint">(fica na lateral da tabela)</span></label><span class="count" id="cnt1"></span></div>
+      <input type="text" id="seq1" value="ACGTAC" spellcheck="false" autocomplete="off" placeholder="ex.: ACGTAC">
+      <div class="preview" id="pv1" aria-hidden="true"></div>
+      <div class="field-top"><label for="seq2">Sequência 2 <span class="hint">(fica no topo da tabela)</span></label><span class="count" id="cnt2"></span></div>
+      <input type="text" id="seq2" value="ACGTTC" spellcheck="false" autocomplete="off" placeholder="ex.: ACGTTC">
+      <div class="preview" id="pv2" aria-hidden="true"></div>
+      <button type="button" id="btnArquivo" class="drop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        <span><b>Ou carregue de um arquivo</b><br>.txt ou .fasta — clique ou arraste aqui</span>
+      </button>
+      <input type="file" id="arquivo" accept=".txt,.fasta,.fa" hidden>
+      <div class="file-pill" id="pillArq" hidden><span id="nomeArq"></span><button type="button" id="btnLimpaArq" title="Remover arquivo" aria-label="Remover arquivo">✕</button></div>
+    </section>
+
+    <section class="step">
+      <div class="step-h"><span class="num">2</span><h2>O que comparar?</h2></div>
+      <div class="modes">
+        <label class="mode"><input type="radio" name="modo" value="GLOBAL" checked>Global<small>Compara as duas sequências inteiras, do começo ao fim.</small></label>
+        <label class="mode"><input type="radio" name="modo" value="LOCAL">Local<small>Procura só o trecho em que elas mais se parecem.</small></label>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="step-h"><span class="num">3</span><h2>Regras de pontuação</h2></div>
+      <div class="params">
+        <div class="param"><label for="match">Acerto</label><input type="number" id="match" value="2" step="1"><small>letras iguais<br>(ganha pontos)</small></div>
+        <div class="param"><label for="mismatch">Diferença</label><input type="number" id="mismatch" value="-1" step="1"><small>letras diferentes<br>(perde pontos)</small></div>
+        <div class="param"><label for="gap">Espaço</label><input type="number" id="gap" value="-2" step="1"><small>buraco “–”<br>(perde pontos)</small></div>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button class="primary" id="btnRun">▶&nbsp; Comparar sequências</button>
+      <button type="button" class="secondary" id="btnCmp">⇄&nbsp; Ver os dois modos lado a lado</button>
+      <div class="kbdhint">Dica: aperte <span class="kbd">Enter</span> em qualquer campo para comparar</div>
+    </div>
+    <div id="erros"></div>
+  </div>
+
+  <details class="card">
+    <summary>✨ Exemplos prontos</summary>
+    <div class="ex-list">
+      <button type="button" class="ex" data-s1="ACGTAC" data-s2="ACGTTC" data-m="GLOBAL" data-p="2,-1,-2"><b>ACGTAC × ACGTTC</b><span>Exemplo simples · global</span></button>
+      <button type="button" class="ex" data-s1="acgta" data-s2="TGCATG" data-m="LOCAL" data-p="3,-2,-4"><b>acgta × TGCATG</b><span>Letras minúsculas também valem · local</span></button>
+      <button type="button" class="ex" data-s1="TGTTACGG" data-s2="GGTTGACTA" data-m="LOCAL" data-p="3,-2,-2"><b>TGTTACGG × GGTTGACTA</b><span>Um caso em que os dois modos dão resultados diferentes</span></button>
+      <button type="button" class="ex" data-s1="ACGTB" data-s2="ACGTTC" data-m="GLOBAL" data-p="2,-1,-2"><b>ACGTB × ACGTTC</b><span>Com uma letra inválida (B) — veja o aviso de erro</span></button>
+    </div>
+  </details>
+</aside>
+
+<main>
+  <section class="intro" id="intro">
+    <button type="button" class="close" id="btnFechaIntro" title="Fechar guia" aria-label="Fechar guia">✕</button>
+    <h2>Como funciona</h2>
+    <p>O DNA é escrito com quatro letras: A, C, G e T. Para saber se duas sequências se parecem, colocamos uma embaixo da outra e contamos os pontos: ganha quando as letras são iguais, perde quando são diferentes e perde quando é preciso deixar um espaço vazio (–) para encaixá-las melhor. O programa testa todas as possibilidades e mostra a que dá mais pontos.</p>
+    <div class="intro-steps">
+      <div class="intro-step"><span class="num">1</span><p><b>Digite as duas sequências</b>Ou carregue um arquivo, ou escolha um dos exemplos prontos.</p></div>
+      <div class="intro-step"><span class="num">2</span><p><b>Escolha global ou local</b>Global compara as sequências inteiras; local procura só o trecho em que elas mais se parecem.</p></div>
+      <div class="intro-step"><span class="num">3</span><p><b>Veja o resultado</b>Acompanhe a tabela sendo preenchida, casa por casa, até chegar à resposta.</p></div>
+    </div>
+  </section>
+
+  <section class="card resbar" id="barra" hidden></section>
+
+  <section class="card">
+    <div class="tabs-wrap">
+      <div class="tabs" role="tablist" id="tabs">
+        <button class="tab" role="tab" data-tab="passo" aria-selected="true">Passo a passo</button>
+        <button class="tab" role="tab" data-tab="aln" aria-selected="false">Resultado</button>
+        <button class="tab" role="tab" data-tab="geral" aria-selected="false">Visão geral</button>
+        <button class="tab" role="tab" data-tab="pont" aria-selected="false">Tabela de pontos</button>
+        <button class="tab" role="tab" data-tab="tb" aria-selected="false">Tabela de setas</button>
+        <button class="tab" role="tab" data-tab="resumo" aria-selected="false">Resumo</button>
+        <button class="tab" role="tab" data-tab="cmp" aria-selected="false">Comparar modos</button>
+      </div>
+    </div>
+    <div class="tab-desc" id="tabDesc"></div>
+    <div id="conteudo"></div>
+  </section>
+</main>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+let RES = null, CMP = null, STEPS = [], K = 0, TIMER = null, ABA = "passo", ARQ = null;
+const NOME_DIR = {"↖": "na diagonal", "↑": "para cima", "←": "para a esquerda", ".": "início"};
+const MODO = {GLOBAL: "Global", LOCAL: "Local"};
+const DESC_ABA = {
+  passo: "Veja o programa trabalhar: ele monta uma tabela, calcula cada casa e depois faz o caminho de volta para descobrir o melhor encaixe. Use ◀ ▶ ou as setas do teclado para avançar e voltar.",
+  aln: "As duas sequências, uma embaixo da outra, no melhor encaixe encontrado. | indica letras iguais, . indica letras diferentes e – indica um espaço vazio.",
+  geral: "Tudo em uma tela só: os números principais, o resultado e a tabela de pontos com o caminho destacado.",
+  pont: "Cada casa guarda a melhor pontuação possível até aquele ponto das duas sequências. O número da casa final é a pontuação do resultado.",
+  tb: "Cada casa guarda uma seta mostrando de qual vizinha veio o seu valor. Seguindo as setas de volta, montamos o resultado.",
+  resumo: "As regras usadas e os números do resultado, reunidos em uma lista.",
+  cmp: "Roda os dois modos com as mesmas sequências e regras, lado a lado, para você ver a diferença entre eles.",
+};
+const ICON_INFO = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>`;
+
+/* ---------- utilidades ---------- */
+const base = c => c === "-" ? `<span class="g">–</span>` : `<span class="b-${c}">${c}</span>`;
+const sgn = n => (n > 0 ? "+" + n : "" + n);
+const op = n => n < 0 ? `− ${-n}` : `+ ${n}`;
+const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+function params() {
+  return {
+    seq1: $("#seq1").value, seq2: $("#seq2").value,
+    match: $("#match").value, mismatch: $("#mismatch").value, gap: $("#gap").value,
+    modo: $("input[name=modo]:checked").value,
+  };
+}
+// O servidor usa os nomes da especificação (Seq1, Match, Gap...); aqui eles viram linguagem do dia a dia.
+const NOMES = {Seq1: "Sequência 1", Seq2: "Sequência 2", Match: "Acerto", Mismatch: "Diferença", Gap: "Espaço"};
+function traduz(m) {
+  return m
+    .replace(/ERRO – base inválida: (.) \((Seq[12]), posição (\d+)\)/, (_, c, s, p) =>
+      `A letra “${c}” na ${NOMES[s]} (posição ${p}) não vale. Use apenas A, C, G ou T.`)
+    .replace(/^(Seq[12]): sequência vazia\./, (_, s) => `A ${NOMES[s]} está vazia.`)
+    .replace(/Recomendado: (\w+) > 0\./, (_, n) => `Sugestão: use um número positivo em “${NOMES[n]}”.`)
+    .replace(/Recomendado: (\w+) < 0\./, (_, n) => `Sugestão: use um número negativo em “${NOMES[n]}”.`)
+    .replace(/Parâmetro ausente: (\w+)\./, (_, n) => `Preencha o campo “${NOMES[n]}”.`)
+    .replace(/Parâmetro não numérico: (\w+).*/, (_, n) => `O campo “${NOMES[n]}” precisa ser um número.`)
+    .replace(/Parâmetro (\w+) deve ser um número inteiro\./, (_, n) => `O campo “${NOMES[n]}” precisa ser um número inteiro (sem vírgula).`)
+    .replace("Tipo de alinhamento inválido ou ausente: use LOCAL ou GLOBAL.", "Escolha global ou local.")
+    .replace(/Arquivo em formato incompatível: ?/, "O arquivo não está no formato esperado. ")
+    .replace(/Quantidade de sequências diferente de duas: encontradas (\d+)\./, "O arquivo precisa ter exatamente duas sequências, mas tem $1.")
+    .replace(/Arquivo ilegível:? ?/, "Não foi possível ler o arquivo. ")
+    .replace("Arquivo muito grande", "O arquivo é grande demais");
+}
+function mostraErros(lista) {
+  $("#erros").innerHTML = lista && lista.length
+    ? `<div class="errbox" role="alert"><b>Algo precisa ser corrigido:</b><ul>${lista.map(e => `<li>${traduz(e)}</li>`).join("")}</ul></div>` : "";
+}
+async function chamar(url, comArquivo = true) {
+  const p = params();
+  let opts;
+  if (comArquivo && ARQ) {
+    const fd = new FormData();
+    Object.entries(p).forEach(([k, v]) => fd.append(k, v));
+    fd.append("arquivo", ARQ);
+    opts = {method: "POST", body: fd};
+  } else {
+    opts = {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(p)};
+  }
+  const r = await fetch(url, opts);
+  return r;
+}
+function destacaErroBases(erros) {
+  // sublinha visualmente o campo com erro de base inválida
+  $("#seq1").style.borderColor = erros.some(e => e.includes("Seq1")) ? "var(--bad)" : "";
+  $("#seq2").style.borderColor = erros.some(e => e.includes("Seq2")) ? "var(--bad)" : "";
+}
+function previa(n) {
+  // mostra as letras coloridas abaixo do campo e marca as inválidas
+  const s = $("#seq" + n).value.trim().toUpperCase(), LIM = 40;
+  $("#cnt" + n).textContent = s.length ? plural(s.length, "letra", "letras") : "";
+  $("#pv" + n).innerHTML = [...s.slice(0, LIM)].map(c => /[ACGT]/.test(c) ? `<span class="b-${c}">${c}</span>` : `<span class="inv" title="Letra inválida">${c === " " ? "␣" : c}</span>`).join("")
+    + (s.length > LIM ? `<span class="more">+${s.length - LIM}</span>` : "");
+}
+const semelhanca = r => r.tamanho ? Math.round(100 * r.matches / r.tamanho) : 0;
+function atualizaBarra() {
+  const b = $("#barra");
+  if (!RES) { b.hidden = true; return; }
+  const r = RES, ident = semelhanca(r);
+  b.hidden = false;
+  b.innerHTML = `
+    <div class="pill"><span>Modo</span><b>${MODO[r.metodo]}</b></div>
+    <div class="pill score"><span>Pontuação</span><b>${r.score}</b></div>
+    <div class="pill" title="Porcentagem de colunas com letras iguais"><span>Semelhança</span><b>${ident}%</b><div class="bar"><i style="width:${ident}%"></i></div></div>
+    <div class="pill"><span>Iguais · Diferentes · Espaços</span><b><span style="color:var(--ok)">${r.matches}</span> · <span style="color:var(--bad)">${r.mismatches}</span> · ${r.gaps}</b></div>
+    <div class="sp"></div>
+    <details class="menu" id="menuExp">
+      <summary><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>Baixar</summary>
+      <div class="menu-pop">
+        <button type="button" class="exp" data-t="txt">Resumo em texto <small>.txt</small></button>
+        <button type="button" class="exp" data-t="alinhamento">Resultado (planilha) <small>.csv</small></button>
+        <button type="button" class="exp" data-t="pontuacao">Tabela de pontos (planilha) <small>.csv</small></button>
+        <button type="button" class="exp" data-t="traceback">Tabela de setas (planilha) <small>.csv</small></button>
+        <button type="button" class="exp" data-t="todos">Tudo de uma vez <small>.zip</small></button>
+      </div>
+    </details>`;
+  $$(".exp", b).forEach(x => x.onclick = () => { $("#menuExp").open = false; exportar(x.dataset.t); });
+}
+
+/* ---------- execução ---------- */
+async function executar() {
+  pausa(); mostraErros([]); destacaErroBases([]);
+  let r;
+  try { r = await chamar("/api/alinhar"); }
+  catch (e) { mostraErros(["Não foi possível falar com o servidor. Verifique se o programa está rodando."]); return; }
+  const dados = await r.json().catch(() => ({erros: ["O servidor respondeu de um jeito inesperado."]}));
+  if (!r.ok) { mostraErros(dados.erros); destacaErroBases(dados.erros); return; }
+  RES = dados; CMP = null;
+  $("#seq1").value = RES.seq1; $("#seq2").value = RES.seq2; previa(1); previa(2);
+  STEPS = montaPassos(RES); K = 0;
+  atualizaBarra();
+  if (RES.avisos && RES.avisos.length) mostraErros([]);
+  vaiAba(ABA === "cmp" ? "passo" : ABA);
+}
+async function comparar() {
+  pausa(); mostraErros([]); destacaErroBases([]);
+  let r;
+  try { r = await chamar("/api/comparar"); }
+  catch (e) { mostraErros(["Não foi possível falar com o servidor. Verifique se o programa está rodando."]); return; }
+  const dados = await r.json().catch(() => ({erros: ["O servidor respondeu de um jeito inesperado."]}));
+  if (!r.ok) { mostraErros(dados.erros); destacaErroBases(dados.erros); return; }
+  CMP = dados;
+  $("#seq1").value = dados.global.seq1; $("#seq2").value = dados.global.seq2; previa(1); previa(2);
+  vaiAba("cmp");
+}
+
+/* ---------- abas ---------- */
+function vaiAba(nome) {
+  ABA = nome;
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", t.dataset.tab === nome));
+  $("#tabDesc").innerHTML = ICON_INFO + `<span>${DESC_ABA[nome]}</span>`;
+  const c = $("#conteudo");
+  if (nome === "cmp") { c.innerHTML = CMP ? htmlComparar() : vazio("Clique em <b>Ver os dois modos lado a lado</b>, na barra da esquerda."); return; }
+  if (!RES) { c.innerHTML = vazio("Digite as sequências e clique em <b>Comparar sequências</b>."); return; }
+  if (nome === "passo") return desenhaPasso();
+  if (nome === "geral") c.innerHTML = htmlGeral();
+  if (nome === "pont") c.innerHTML = matrizHTML(RES, "pont") + legenda("pont");
+  if (nome === "tb") c.innerHTML = `<p class="hint">↖ diagonal: as duas letras ficam uma sobre a outra · ↑ cima: espaço vazio na Sequência 2 · ← esquerda: espaço vazio na Sequência 1 · <b>.</b> ponto de partida</p>` + matrizHTML(RES, "tb") + legenda("tb");
+  if (nome === "aln") c.innerHTML = htmlAlinhamento();
+  if (nome === "resumo") c.innerHTML = htmlResumo();
+}
+const vazio = t => `<div class="empty"><div class="big">🧬</div><p>${t}</p></div>`;
+
+/* ---------- matrizes ---------- */
+function caminhoSet(res) { return new Set(res.caminho.map(([i, j]) => i + "," + j)); }
+function matrizHTML(res, tipo) {
+  const A = res.seq1, B = res.seq2, path = caminhoSet(res);
+  const src = tipo === "pont" ? res.matriz : res.traceback;
+  let h = `<div class="mwrap"><table class="m"><thead><tr><th></th><th>–</th>${[...B].map(c => `<th>${base(c)}</th>`).join("")}</tr></thead><tbody>`;
+  for (let i = 0; i <= A.length; i++) {
+    h += `<tr><th>${i === 0 ? "–" : base(A[i - 1])}</th>`;
+    for (let j = 0; j <= B.length; j++) {
+      const cls = [];
+      if (path.has(i + "," + j)) cls.push("path");
+      if (res.metodo === "LOCAL" && i === res.inicio[0] && j === res.inicio[1]) cls.push("start");
+      if (tipo === "tb") cls.push("dir-only");
+      h += `<td class="${cls.join(" ")}"><span class="v">${src[i][j]}</span></td>`;
+    }
+    h += "</tr>";
+  }
+  return h + "</tbody></table></div>";
+}
+function legenda(tipo) {
+  return `<div class="legend"><span><i style="background:var(--path)"></i>caminho de volta (o melhor encaixe)</span>` +
+    (RES.metodo === "LOCAL" ? `<span><i style="box-shadow:inset 0 0 0 3px var(--ok)"></i>maior número da tabela (onde o caminho começa)</span>` : "") + `</div>`;
+}
+
+/* ---------- alinhamento ---------- */
+function alnHTML(res, opt = {}) {
+  const a = res.seq1_alinhada, b = res.seq2_alinhada, l = res.linha;
+  const total = opt.total ?? a.length, preenchidos = opt.preenchidos ?? a.length;
+  const col = (c, k) => k < total - preenchidos ? `<span class="col empty-col">·</span>`
+    : `<span class="col ${c === "-" ? "g" : ""} ${opt.novo === k ? "new" : ""}">${base(c)}</span>`;
+  const linha = (s) => [...s].map((c, k) => col(c, k)).join("");
+  const mk = [...l].map((c, k) => k < total - preenchidos ? `<span class="col mk">&nbsp;</span>`
+    : `<span class="col mk ${c === "|" ? "m" : c === "." ? "x" : ""}">${c === " " ? "&nbsp;" : c}</span>`).join("");
+  return `<div class="alnbox"><div class="aln">
+    <div class="ln"><span class="lbl">Seq. 1</span>${linha(a)}</div>
+    <div class="ln"><span class="lbl"></span>${mk}</div>
+    <div class="ln"><span class="lbl">Seq. 2</span>${linha(b)}</div></div></div>`;
+}
+const legendaAln = `<div class="legend" style="margin-top:12px"><span><b style="color:var(--ok)">|</b> letras iguais</span><span><b style="color:var(--bad)">.</b> letras diferentes</span><span><b style="color:var(--bad)">–</b> espaço vazio</span></div>`;
+function htmlAlinhamento() {
+  const r = RES;
+  return `<div class="stats">
+      <div class="stat score"><b>${r.score}</b><span>Pontuação final</span></div>
+      <div class="stat"><b>${semelhanca(r)}%</b><span>Semelhança</span></div>
+      <div class="stat"><b style="color:var(--ok)">${r.matches}</b><span>Letras iguais</span></div>
+      <div class="stat"><b style="color:var(--bad)">${r.mismatches}</b><span>Letras diferentes</span></div>
+      <div class="stat"><b>${r.gaps}</b><span>Espaços vazios</span></div>
+    </div>
+    <h3 style="margin-top:0">Melhor encaixe encontrado</h3>
+    ${alnHTML(r)}${legendaAln}
+    ${r.metodo === "LOCAL" ? regiaoLocal(r) : ""}
+    <p class="hint" style="margin-top:14px">Regras usadas: acerto ${sgn(r.match)}, diferença ${sgn(r.mismatch)}, espaço ${sgn(r.gap)}.</p>`;
+}
+function regiaoLocal(r) {
+  if (!r.regiao_seq1) return `<div class="callout">Não foi encontrado nenhum trecho parecido: todas as casas da tabela ficaram com 0.</div>`;
+  return `<div class="callout">O trecho parecido vai da posição <b>${r.regiao_seq1[0]}</b> à <b>${r.regiao_seq1[1]}</b> na Sequência 1 e da posição <b>${r.regiao_seq2[0]}</b> à <b>${r.regiao_seq2[1]}</b> na Sequência 2. O resto das sequências ficou de fora.</div>`;
+}
+function htmlGeral() {
+  const r = RES;
+  return `${(r.avisos || []).map(a => `<div class="warnbox">⚠ ${traduz(a)}</div>`).join("")}
+  <div class="stats">
+    <div class="stat"><b style="font-size:16px">${MODO[r.metodo]}</b><span>Modo</span></div>
+    <div class="stat score"><b>${r.score}</b><span>Pontuação final</span></div>
+    <div class="stat"><b>${semelhanca(r)}%</b><span>Semelhança</span></div>
+    <div class="stat"><b>${r.seq1.length} e ${r.seq2.length}</b><span>Letras em cada sequência</span></div>
+    <div class="stat"><b>${r.matches} / ${r.mismatches} / ${r.gaps}</b><span>iguais / diferentes / espaços</span></div>
+  </div>
+  <h3>Melhor encaixe</h3>${alnHTML(r)}${legendaAln}
+  ${r.metodo === "LOCAL" ? regiaoLocal(r) : ""}
+  <h3>Tabela de pontos</h3>${matrizHTML(r, "pont")}${legenda("pont")}`;
+}
+function htmlResumo() {
+  const r = RES, m = r.seq1.length, n = r.seq2.length;
+  return `<table class="sum">
+    <tr><td>Modo</td><td>${MODO[r.metodo]}</td></tr>
+    <tr><td>Sequência 1</td><td style="font-family:var(--mono);word-break:break-all">${r.seq1}</td></tr>
+    <tr><td>Sequência 2</td><td style="font-family:var(--mono);word-break:break-all">${r.seq2}</td></tr>
+    <tr><td>Pontos por acerto</td><td>${sgn(r.match)}</td></tr><tr><td>Pontos por diferença</td><td>${sgn(r.mismatch)}</td></tr><tr><td>Pontos por espaço vazio</td><td>${sgn(r.gap)}</td></tr>
+    <tr><td>Pontuação final</td><td>${r.score}</td></tr>
+    <tr><td>Semelhança</td><td>${semelhanca(r)}% (${r.matches} de ${r.tamanho} colunas iguais)</td></tr>
+    <tr><td>Letras iguais · diferentes · espaços</td><td>${r.matches} · ${r.mismatches} · ${r.gaps}</td></tr></table>
+    <details class="note"><summary><b>Detalhes técnicos</b> (para quem quer saber mais)</summary>
+      <p>Alinhamento <b>${MODO[r.metodo].toLowerCase()}</b>, feito com programação dinâmica. O caminho de volta (em inglês, <i>traceback</i>) começou na casa (${r.inicio[0]}, ${r.inicio[1]}) e terminou na casa (${r.fim[0]}, ${r.fim[1]}).</p>
+      <p>A tabela tem (m+1)×(n+1) = ${(m + 1) * (n + 1)} casas e cada uma é calculada com 3 comparações: o tempo e a memória crescem na proporção <b>m×n</b>. O caminho de volta passa por no máximo m+n casas.</p>
+      <p>Em empate, a preferência é diagonal, depois cima, depois esquerda.</p>
+    </details>`;
+}
+function htmlComparar() {
+  const g = CMP.global, l = CMP.local;
+  const card = (r, titulo, sub) => `<div class="card"><h3>${titulo}</h3><p class="hint" style="margin-top:-6px">${sub}</p>
+    <div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat score"><b>${r.score}</b><span>Pontuação</span></div><div class="stat"><b>${semelhanca(r)}%</b><span>Semelhança</span></div></div>
+    ${alnHTML(r)}
+    <p class="hint" style="margin-top:10px">${plural(r.matches, "letra igual", "letras iguais")} · ${plural(r.mismatches, "diferente", "diferentes")} · ${plural(r.gaps, "espaço", "espaços")}</p>
+    ${r.metodo === "LOCAL" ? regiaoLocal(r) : `<div class="callout">Usa as sequências inteiras: posições 1 a ${r.seq1.length} da Sequência 1 e 1 a ${r.seq2.length} da Sequência 2.</div>`}
+    <button type="button" onclick="abrirPasso('${r.metodo}')">Ver passo a passo →</button></div>`;
+  const igual = g.seq1_alinhada === l.seq1_alinhada && g.seq2_alinhada === l.seq2_alinhada;
+  return `<div class="cmp">${card(g, "Global", "compara as sequências inteiras")}${card(l, "Local", "só o trecho mais parecido")}</div>
+    <div class="callout ok" style="margin-top:14px">${igual
+      ? "O global e o local chegaram ao mesmo resultado para estas sequências."
+      : `Os resultados são diferentes: no global (<b>${g.score}</b> pontos) é preciso encaixar as sequências inteiras, do começo ao fim. Já o local (<b>${l.score}</b> pontos) fica só com a parte mais parecida e deixa o resto de fora.`}</div>`;
+}
+function abrirPasso(modo) {
+  $$("input[name=modo]").forEach(r => r.checked = r.value === modo);
+  ABA = "passo"; executar();
+}
+
+/* ---------- passo a passo ---------- */
+function montaPassos(res) {
+  const P = res.passos;
+  if (!P) return null;
+  const st = [{t: "init"}];
+  P.preenchimento.filter(x => x.tipo === "celula").forEach(c => st.push({t: "cell", c}));
+  st.push({t: "inicio"});
+  P.traceback.forEach((x, idx) => st.push({t: "tb", x, idx}));
+  st.push({t: "fim"});
+  // índice de passo de cada célula e de cada movimento do traceback
+  res._cellStep = {}; res._tbStep = {};
+  st.forEach((s, k) => {
+    if (s.t === "cell") res._cellStep[s.c.i + "," + s.c.j] = k;
+    if (s.t === "tb") res._tbStep[s.x.i + "," + s.x.j] = k;
+  });
+  return st;
+}
+function desenhaPasso() {
+  const c = $("#conteudo"), r = RES;
+  if (!STEPS) {
+    c.innerHTML = `<div class="callout">As sequências são grandes demais (mais de 10.000 casas na tabela) para mostrar o passo a passo sem travar a tela. Veja o resultado nas outras abas.</div>`;
+    return;
+  }
+  c.innerHTML = `
+    <div class="phases" id="fases"></div>
+    <div class="player">
+      <button id="pIni" title="Voltar ao começo (Home)">⏮</button><button id="pAnt" title="Passo anterior (←)">◀</button>
+      <button id="pPlay" class="go" title="Tocar / pausar (Espaço)">▶</button>
+      <button id="pProx" title="Próximo passo (→)">▶|</button><button id="pFim" title="Ir para o fim (End)">⏭</button>
+      <input type="range" id="pSlider" min="0" max="${STEPS.length - 1}" value="${K}" aria-label="Passo">
+      <span class="speed">Velocidade <input type="range" id="pVel" min="1" max="10" value="5"></span>
+      <button id="pPul" title="Pular o preenchimento da tabela" class="chip">Pular para o caminho de volta ↴</button>
+    </div>
+    <div class="stepgrid">
+      <div>
+        <div class="mwrap" id="stepMatrix"></div>
+        <div class="legend">
+          <span><i style="background:var(--cur)"></i>casa atual</span>
+          <span><i style="background:var(--diag-bg);box-shadow:inset 0 0 0 2px var(--diag)"></i>↖ vizinha da diagonal</span>
+          <span><i style="background:var(--cima-bg);box-shadow:inset 0 0 0 2px var(--cima)"></i>↑ vizinha de cima</span>
+          <span><i style="background:var(--esq-bg);box-shadow:inset 0 0 0 2px var(--esq)"></i>← vizinha da esquerda</span>
+          <span><i style="background:var(--path)"></i>caminho de volta</span>
+          ${r.metodo === "LOCAL" ? `<span><i style="box-shadow:inset 0 0 0 3px var(--ok)"></i>maior número</span>` : ""}
+        </div>
+      </div>
+      <div>
+        <div class="explain" id="explica"></div>
+        <div class="mini-aln"><b>Resultado sendo montado (de trás para frente)</b><div id="miniAln"></div></div>
+      </div>
+    </div>`;
+  const A = r.seq1, B = r.seq2;
+  let h = `<table class="m"><thead><tr><th id="th0"></th><th id="c0">–</th>${[...B].map((ch, j) => `<th id="c${j + 1}">${base(ch)}</th>`).join("")}</tr></thead><tbody>`;
+  for (let i = 0; i <= A.length; i++) {
+    h += `<tr><th id="r${i}">${i === 0 ? "–" : base(A[i - 1])}</th>`;
+    for (let j = 0; j <= B.length; j++) h += `<td id="x${i}_${j}"><span class="v"></span><span class="a"></span></td>`;
+    h += "</tr>";
+  }
+  $("#stepMatrix").innerHTML = h + "</tbody></table>";
+  $("#pIni").onclick = () => ir(0); $("#pAnt").onclick = () => ir(K - 1);
+  $("#pProx").onclick = () => ir(K + 1); $("#pFim").onclick = () => ir(STEPS.length - 1);
+  $("#pPlay").onclick = alternaPlay;
+  $("#pSlider").oninput = e => { pausa(); ir(+e.target.value); };
+  $("#pPul").onclick = () => { pausa(); ir(STEPS.findIndex(s => s.t === "inicio")); };
+  atualizaPasso();
+}
+function ir(k) {
+  if (!STEPS) return;
+  K = Math.max(0, Math.min(STEPS.length - 1, k));
+  if (K === STEPS.length - 1) pausa();
+  atualizaPasso();
+}
+function alternaPlay() {
+  if (TIMER) return pausa();
+  if (K >= STEPS.length - 1) K = 0;
+  $("#pPlay").textContent = "⏸";
+  const tick = () => {
+    if (K >= STEPS.length - 1) return pausa();
+    ir(K + 1);
+    if (TIMER) TIMER = setTimeout(tick, 1100 - $("#pVel").value * 100);
+  };
+  TIMER = setTimeout(tick, 100);
+}
+function pausa() {
+  if (TIMER) { clearTimeout(TIMER); TIMER = null; }
+  const b = $("#pPlay"); if (b) b.textContent = "▶";
+}
+function atualizaPasso() {
+  const r = RES, s = STEPS[K], P = r.passos, local = r.metodo === "LOCAL";
+  const A = r.seq1, B = r.seq2, nCel = A.length * B.length;
+  const idxInicio = STEPS.findIndex(x => x.t === "inicio");
+  // fases
+  const fase = s.t === "init" ? 0 : s.t === "cell" ? 1 : 2;
+  $("#fases").innerHTML = ["1 · Montar a tabela", "2 · Preencher a tabela", "3 · Caminho de volta"]
+    .map((t, i) => `<span class="phase ${i === fase && s.t !== "fim" ? "on" : i < fase || (i === 2 && s.t === "fim") ? "done" : ""}">${t}</span>`).join("");
+  $("#pSlider").value = K;
+
+  // limpa estados
+  $$("#stepMatrix td").forEach(td => td.className = "");
+  $$("#stepMatrix th").forEach(th => th.classList.remove("hl"));
+  const el = (i, j) => $(`#x${i}_${j}`);
+
+  // valores revelados
+  for (let i = 0; i <= A.length; i++) for (let j = 0; j <= B.length; j++) {
+    const td = el(i, j), borda = i === 0 || j === 0;
+    const rev = borda ? true : r._cellStep[i + "," + j] <= K;
+    td.querySelector(".v").textContent = rev ? r.matriz[i][j] : "";
+    const mostraSeta = rev && !(borda && local) && !(i === 0 && j === 0);
+    td.querySelector(".a").textContent = mostraSeta ? r.traceback[i][j] : "";
+    if (!rev) td.classList.add("hidden");
+  }
+  // caminho já percorrido
+  r.caminho.forEach(([i, j]) => { if (r._tbStep[i + "," + j] <= K) el(i, j).classList.add("path"); });
+  if (K >= idxInicio) el(r.inicio[0], r.inicio[1]).classList.add("start");
+
+  let cur = null;
+  if (s.t === "cell") {
+    const c = s.c; cur = [c.i, c.j];
+    el(c.i - 1, c.j - 1).classList.add("s-d"); el(c.i - 1, c.j).classList.add("s-c"); el(c.i, c.j - 1).classList.add("s-e");
+  } else if (s.t === "tb") cur = [s.x.i, s.x.j];
+  else if (s.t === "inicio") cur = r.inicio;
+  else if (s.t === "fim") cur = r.fim;
+  if (cur) {
+    const td = el(cur[0], cur[1]); td.classList.add("cur");
+    $(`#r${cur[0]}`).classList.add("hl"); $(`#c${cur[1]}`).classList.add("hl");
+    td.scrollIntoView({block: "nearest", inline: "nearest"});
+  }
+
+  $("#explica").innerHTML = explica(s, r, K, local);
+
+  // alinhamento parcial
+  const n = r.tamanho;
+  let pre = 0, novo = null;
+  if (s.t === "tb") { pre = s.idx + 1; novo = n - pre; }
+  if (s.t === "fim") pre = n;
+  $("#miniAln").innerHTML = alnHTML(r, {total: n, preenchidos: pre, novo});
+}
+function explica(s, r, k, local) {
+  const total = STEPS.length - 1;
+  const no = `<span class="stepno">passo ${k} de ${total}</span>`;
+  const m = r.seq1.length, n = r.seq2.length;
+  const pts = v => `${v} ${Math.abs(v) === 1 ? "ponto" : "pontos"}`;
+
+  if (s.t === "init") {
+    return `${no}<h3>Montando a tabela</h3>
+      <p>A <b>Sequência 1</b> fica na lateral e a <b>Sequência 2</b> fica no topo. Cada casa da tabela vai guardar a melhor pontuação possível até aquele ponto.</p>` + (local
+      ? `<p>No alinhamento <b>local</b>, a primeira linha e a primeira coluna começam todas com <b>0</b>: o trecho parecido pode começar em qualquer lugar, sem custo.</p>`
+      : `<p>No alinhamento <b>global</b>, a primeira linha e a primeira coluna vão perdendo pontos: cada passo ali equivale a um espaço vazio, que custa ${r.gap}. Por isso ficam ${0}, ${r.gap}, ${2 * r.gap}, ${3 * r.gap}…</p>`) +
+      `<div class="callout">A tabela tem ${m + 1} × ${n + 1} casas. Aperte ▶ (ou a seta → do teclado) para calcular a primeira casa.</div>`;
+  }
+  if (s.t === "cell") {
+    const c = s.c, sc = c.igual ? `letras iguais, ${sgn(r.match)}` : `letras diferentes, ${sgn(r.mismatch)}`;
+    const cands = [
+      {k: "d", nome: "Diagonal ↖", v: c.diag, txt: `pôr ${c.a} sobre ${c.b}: ${c.diag_de} ${op(c.score)} (${sc})`},
+      {k: "c", nome: "Cima ↑", v: c.cima, txt: `espaço vazio na Sequência 2: ${c.cima_de} ${op(r.gap)}`},
+      {k: "e", nome: "Esquerda ←", v: c.esq, txt: `espaço vazio na Sequência 1: ${c.esq_de} ${op(r.gap)}`},
+    ];
+    const max = Math.max(...cands.map(x => x.v));
+    const ordem = {"↖": "d", "↑": "c", "←": "e"};
+    const venc = c.zerou ? "z" : ordem[c.dir];
+    const empatados = cands.filter(x => x.v === max).map(x => x.nome);
+    let linhas = cands.map(x => `<tr class="${x.k === venc ? "win" : ""}"><td><span class="tag ${x.k}">${x.nome}</span></td><td>${x.txt}</td><td class="val">${x.v}</td></tr>`).join("");
+    if (local) linhas += `<tr class="${venc === "z" ? "win" : ""}"><td><span class="tag z">Recomeçar</span></td><td>começar um trecho novo a partir daqui</td><td class="val">0</td></tr>`;
+    let nota = "";
+    if (c.zerou) nota = `<div class="callout">Todas as opções dariam pontos negativos, então a casa fica com <b>0</b> e o trecho recomeça daqui. No alinhamento local, a pontuação nunca fica abaixo de zero.</div>`;
+    else if (empatados.length > 1) nota = `<div class="callout">Empate entre ${empatados.join(" e ")} (${pts(max)}). Quando empata, a preferência é: diagonal, depois cima, depois esquerda. Por isso fica a seta <b>${c.dir}</b>.</div>`;
+    return `${no}<h3>Casa (${c.i}, ${c.j}): comparando ${base(c.a)} com ${base(c.b)}</h3>
+      <p>${c.igual ? "As letras são <b>iguais</b>." : "As letras são <b>diferentes</b>."} A casa olha para as vizinhas e escolhe a opção que dá mais pontos:</p>
+      <table class="cand"><tbody>${linhas}</tbody></table>
+      <p>A melhor opção vale <b>${pts(c.valor)}</b>. Guardamos esse número e a seta <b style="font-size:18px">${c.dir}</b> ${c.zerou ? "(recomeço)" : "(" + NOME_DIR[c.dir] + ")"}, para lembrar de onde ele veio.</p>${nota}`;
+  }
+  if (s.t === "inicio") {
+    const [i, j] = r.inicio;
+    return `${no}<h3>Tabela pronta! Agora, o caminho de volta</h3>` + (local
+      ? `<p>No alinhamento <b>local</b>, começamos pela casa com o <b>maior número da tabela</b>: <b>${r.matriz[i][j]}</b>, na casa (${i}, ${j}). Se houver empate, vale o primeiro encontrado, lendo da esquerda para a direita e de cima para baixo.</p>`
+      : `<p>No alinhamento <b>global</b>, começamos pela <b>última casa</b> (canto inferior direito), porque o resultado precisa usar as duas sequências do começo ao fim.</p>`) +
+      `<div class="callout ok">Pontuação final = <b>${r.score}</b> (o número dessa casa).</div>
+      <p>Agora seguimos as setas de volta, uma casa por vez, e o resultado vai sendo montado de trás para frente.</p>`;
+  }
+  if (s.t === "tb") {
+    const x = s.x;
+    const acao = x.dir === "↖" ? `colocamos <b>${x.a}</b> sobre <b>${x.b}</b> (${x.a === x.b ? "letras iguais" : "letras diferentes"}) e seguimos na diagonal até a casa (${x.i - 1}, ${x.j - 1})`
+      : x.dir === "↑" ? `colocamos <b>${x.a}</b> na Sequência 1 e um <b>espaço vazio</b> na Sequência 2, e subimos para a casa (${x.i - 1}, ${x.j})`
+      : `colocamos um <b>espaço vazio</b> na Sequência 1 e <b>${x.b}</b> na Sequência 2, e vamos para a esquerda, até a casa (${x.i}, ${x.j - 1})`;
+    return `${no}<h3>Caminho de volta: passo ${s.idx + 1} de ${r.passos.traceback.length}</h3>
+      <p>Estamos na casa (${x.i}, ${x.j}), que vale <b>${x.valor}</b>. A seta aponta <b style="font-size:18px">${x.dir}</b> (${NOME_DIR[x.dir]}), então ${acao}.</p>
+      <div class="callout">Nova coluna no resultado: ${base(x.a)} em cima, ${base(x.b)} embaixo.</div>`;
+  }
+  const f = r.passos.parada;
+  return `${no}<h3>Pronto!</h3>` + (local
+    ? `<p>O caminho parou na casa (${f.i}, ${f.j}), que vale <b>0</b>: é ali que o trecho parecido começa.</p>${regiaoLocal(r)}`
+    : `<p>O caminho chegou ao canto de cima, à esquerda: as duas sequências foram usadas do começo ao fim.</p>`) +
+    `<div class="callout ok"><b>Pontuação final: ${r.score}</b> · ${plural(r.matches, "letra igual", "letras iguais")}, ${plural(r.mismatches, "diferente", "diferentes")}, ${plural(r.gaps, "espaço vazio", "espaços vazios")}</div>`;
+}
+
+/* ---------- exportação ---------- */
+async function exportar(tipo) {
+  const r = await chamar("/api/exportar/" + tipo, false);
+  if (!r.ok) { const d = await r.json().catch(() => ({})); return mostraErros(d.erros || ["Não foi possível baixar o arquivo."]); }
+  const cd = r.headers.get("Content-Disposition") || "";
+  const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+  const blob = await r.blob(), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = m ? decodeURIComponent(m[1]) : "alinhamento_" + tipo;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- arquivo ---------- */
+function defineArquivo(f) {
+  ARQ = f || null;
+  $("#nomeArq").textContent = ARQ ? `📄 ${ARQ.name} — as sequências serão lidas deste arquivo` : "";
+  $("#pillArq").hidden = !ARQ;
+}
+function limpaArquivo() { $("#arquivo").value = ""; defineArquivo(null); }
+
+/* ---------- tema e guia ---------- */
+const guarda = (k, v) => { try { v === undefined ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} };
+const le = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+function aplicaTema(t) { if (t) document.documentElement.dataset.theme = t; }
+aplicaTema(le("tema"));
+$("#btnTema").onclick = () => {
+  const atual = document.documentElement.dataset.theme
+    || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  const novo = atual === "dark" ? "light" : "dark";
+  aplicaTema(novo); guarda("tema", novo);
+};
+if (le("introFechada")) $("#intro").hidden = true;
+$("#btnFechaIntro").onclick = () => { $("#intro").hidden = true; guarda("introFechada", "1"); };
+$("#btnAjuda").onclick = () => { const i = $("#intro"); i.hidden = !i.hidden; guarda("introFechada", i.hidden ? "1" : undefined); if (!i.hidden) i.scrollIntoView({behavior: "smooth", block: "nearest"}); };
+
+/* ---------- eventos ---------- */
+$("#btnRun").onclick = executar;
+$("#btnCmp").onclick = comparar;
+// trocar entre global e local já refaz o alinhamento, sem precisar clicar em "Comparar"
+$$("input[name=modo]").forEach(r => r.addEventListener("change", executar));
+$$(".tab").forEach(t => t.onclick = () => { pausa(); vaiAba(t.dataset.tab); });
+$$(".ex").forEach(b => b.onclick = () => {
+  limpaArquivo();
+  $("#seq1").value = b.dataset.s1; $("#seq2").value = b.dataset.s2; previa(1); previa(2);
+  const [m, mm, g] = b.dataset.p.split(",");
+  $("#match").value = m; $("#mismatch").value = mm; $("#gap").value = g;
+  $$("input[name=modo]").forEach(r => r.checked = r.value === b.dataset.m);
+  executar();
+});
+$("#btnArquivo").onclick = () => $("#arquivo").click();
+$("#arquivo").onchange = e => defineArquivo(e.target.files[0]);
+const drop = $("#btnArquivo");
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, () => drop.classList.remove("over")));
+drop.addEventListener("drop", e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) defineArquivo(f); });
+$("#btnLimpaArq").onclick = limpaArquivo;
+["seq1", "seq2"].forEach((id, n) => $("#" + id).addEventListener("input", () => { if (ARQ) limpaArquivo(); $("#" + id).style.borderColor = ""; previa(n + 1); }));
+document.addEventListener("click", e => { const m = $("#menuExp"); if (m && m.open && !m.contains(e.target)) m.open = false; });
+document.addEventListener("keydown", e => {
+  if (ABA !== "passo" || !STEPS || /INPUT|TEXTAREA/.test(document.activeElement.tagName) && document.activeElement.type !== "range") return;
+  if (e.key === "ArrowRight") { pausa(); ir(K + 1); e.preventDefault(); }
+  else if (e.key === "ArrowLeft") { pausa(); ir(K - 1); e.preventDefault(); }
+  else if (e.key === " " && document.activeElement.tagName !== "BUTTON") { alternaPlay(); e.preventDefault(); }
+  else if (e.key === "Home") { pausa(); ir(0); } else if (e.key === "End") { pausa(); ir(STEPS.length - 1); }
+});
+["seq1", "seq2", "match", "mismatch", "gap"].forEach(id => $("#" + id).addEventListener("keydown", e => { if (e.key === "Enter") executar(); }));
+
+previa(1); previa(2);
+vaiAba("passo");
+executar();
+</script>
+</body>
+</html>
